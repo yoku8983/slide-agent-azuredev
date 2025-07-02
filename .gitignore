@@ -1,0 +1,130 @@
+
+# バイトコードや最適化されたファイル、DLL
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C拡張
+*.so
+
+# 仮想環境
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+myenv/
+
+# 配布・パッケージ関連
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller関連ファイル
+*.manifest
+*.spec
+
+# インストール時のログ
+pip-log.txt
+pip-delete-this-directory.txt
+
+# テスト・カバレッジ関連
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# 翻訳ファイル
+*.mo
+*.pot
+
+# Django関連
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask関連
+instance/
+.webassets-cache
+
+# Scrapy関連
+.scrapy
+
+# Sphinxドキュメント関連
+docs/_build/
+
+# Jupyter Notebook関連
+.ipynb_checkpoints
+
+# IPython関連
+profile_default/
+ipython_config.py
+
+# pyenv関連
+.python-version
+
+# PEP 582; 例: github.com/David-OConnor/pyflow
+__pypackages__/
+
+# SageMath解析ファイル
+*.sage.py
+
+# 環境ファイル
+.env
+backend/.env
+
+# mkdocsドキュメント
+/site
+
+# mypy関連
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre型チェッカー関連
+.pyre/
+
+# pytype静的型解析器関連
+.pytype/
+
+# Cythonデバッグシンボル
+cython_debug/
+
+# VS Code関連
+.vscode/
+
+# IntelliJ関連
+.idea/
+
+# MacOS関連
+.DS_Store
+
+# ログファイル
+*.log
+
