@@ -2,7 +2,9 @@
 
 ## 概要
 
-Slide Agent MVPは、AIを活用してプレゼンテーション作成を自動化するWebアプリケーションです。ユーザーが日本語でプレゼンテーション内容を詳細に入力すると、AWS BedrockのClaude 3.5 Sonnetが自動的に構成案を作成し、最終的にPowerPointファイルを生成・ダウンロードできます。
+Slide Agentは、AIを活用してプレゼンテーション作成を自動化するWebアプリケーションです。
+ユーザーが日本語でプレゼンテーション内容を詳細に入力すると、LLM(Claude 3.5 Sonnet)が自動的に構成案を作成し、
+最終的にPowerPointファイルを生成・ダウンロードできます。
 
 役員会向けの提案資料や会議資料など、ビジネスシーンでの効率的なプレゼンテーション作成をサポートします。
 
@@ -14,7 +16,7 @@ Slide Agent MVPは、AIを活用してプレゼンテーション作成を自動
 - 豊富な入力例とガイダンス
 
 ### 🤖 AI構成案生成
-- AWS BedrockのClaude 3.5 Sonnetによる高品質な構成案作成
+- Claude 3.5 Sonnetによる高品質な構成案作成（AWS Bedrock利用）
 - スライドタイトルと箇条書き本文の自動生成
 - JSON形式での構造化されたレスポンス
 
@@ -64,7 +66,6 @@ slide-agent-mvp/
 │   ├── index.html                  # HTMLエントリーポイント
 │   ├── package.json                # Node.js依存関係
 │   └── package-lock.json           # ロックファイル
-├── myenv/                          # Python仮想環境
 ├── Makefile                        # ビルド自動化ファイル
 └── README.md                       # プロジェクトドキュメント
 ```
@@ -75,6 +76,7 @@ slide-agent-mvp/
 - Python 3.12以上
 - Node.js 18以上
 - AWS認証情報の設定（~/.aws/credentials）
+
 
 ### 1. リポジトリのクローン
 ```bash
@@ -172,19 +174,14 @@ npm run dev
 - **CORS エラー**: バックエンドのCORS設定を確認
 - **PowerPoint生成エラー**: テンプレートファイルの存在を確認
 
-## 今後の拡張予定
-
-- [ ] 複数のPowerPointテンプレート対応
-- [ ] スライド内容の手動編集機能
+## 非対応（今後拡張検討）
 - [ ] 画像・図表の自動挿入
-- [ ] 複数言語対応
-- [ ] ユーザー認証機能
 - [ ] 生成履歴の保存機能
 
 ## ライセンス
 
-このプロジェクトは開発中のMVP（Minimum Viable Product）です。商用利用については開発者にお問い合わせください。
+このプロジェクトは開発中のMVP（Minimum Viable Product）です。
 
 ---
 
-**Note**: このアプリケーションはAWS Bedrockを使用するため、API利用料金が発生する可能性があります。使用前に料金体系をご確認ください。
+**Note**: このアプリケーションはAWS Bedrockを使用するため、API利用料金が発生します。使用前に料金体系をご確認ください。
