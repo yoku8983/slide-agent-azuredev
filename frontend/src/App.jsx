@@ -61,6 +61,14 @@ function App() {
     }
   };
 
+  const handleReset = () => {
+    setPrompt('');
+    setPlan(null);
+    setIsLoading(false);
+    setError('');
+    setLoadingMessage('');
+  };
+
   const renderPlanPreview = (slidePlan, index) => {
     const slideTypeJa = slidePlan.slide_type === 'text_slide' ? 'テキスト' : '表';
     return (
@@ -101,6 +109,10 @@ function App() {
   return (
     <div className="container">
       <h1>スライド作成 AIエージェント 🤖</h1>
+
+      <button onClick={handleReset} style={{ backgroundColor: '#6c757d', marginBottom: '1rem' }}>
+          入力内容を全てクリア
+      </button>
       
       <div className="card">
         <h2>1. スライドの内容を入力</h2>

@@ -2,6 +2,7 @@ import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import List, Literal
 
@@ -25,6 +26,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # --- 2. データモデル定義 ---
 class SlidePlan(BaseModel):
@@ -168,6 +170,8 @@ async def create_slides(presentation_plan: PresentationPlan):
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"スライド {i + 1} (トピック: '{slide_plan.topic}') の生成に失敗しました: {e}")
 
+            await asyncio.sleep(1) # 1秒待機して次のAPIコールへ
+
         # 3. ループ完了後、ファイルを保存して返す
         output_filename = "generated_presentation.pptx"
         prs.save(output_filename)
@@ -222,3 +226,7 @@ def draw_table_on_slide(slide, prs, table_data: TableData):
     for row in table.rows:
         for cell in row.cells:
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+
+# "static"ディレクトリ内のファイルを配信し、ルートパス("/")へのアクセスでindex.htmlを返す設定
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
