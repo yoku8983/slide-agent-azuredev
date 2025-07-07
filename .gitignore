@@ -128,3 +128,5 @@ cython_debug/
 # ログファイル
 *.log
 
+# その他
+backend/generated_presentation*.pptx
