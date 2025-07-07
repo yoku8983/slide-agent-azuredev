@@ -2,9 +2,7 @@
 
 ## 概要
 
-Slide Agentは、AIを活用してプレゼンテーション作成を自動化するWebアプリケーションです。
-ユーザーが日本語でプレゼンテーション内容を詳細に入力すると、LLM(Claude 3.5 Sonnet)が自動的に構成案を作成し、
-最終的にPowerPointファイルを生成・ダウンロードできます。
+Slide Agent MVPは、AIを活用してプレゼンテーション作成を自動化するWebアプリケーションです。ユーザーが日本語でプレゼンテーション内容を詳細に入力すると、Claude 3.5 Sonnet（AWS Bedrock）が自動的に構成案を作成し、最終的にPowerPointファイルを生成・ダウンロードできます。
 
 役員会向けの提案資料や会議資料など、ビジネスシーンでの効率的なプレゼンテーション作成をサポートします。
 
@@ -17,8 +15,9 @@ Slide Agentは、AIを活用してプレゼンテーション作成を自動化�
 
 ### 🤖 AI構成案生成
 - Claude 3.5 Sonnetによる高品質な構成案作成（AWS Bedrock利用）
-- スライドタイトルと箇条書き本文の自動生成
-- JSON形式での構造化されたレスポンス
+- 「序論・本論・結論」フレームワークに基づく論理的構成
+- スライドタイプ（テキスト/表）の自動判定
+- 構成の論理的妥当性を説明するrationale生成
 
 ### 👀 リアルタイムプレビュー
 - 生成されたスライド構成の即座表示
@@ -27,8 +26,9 @@ Slide Agentは、AIを活用してプレゼンテーション作成を自動化�
 
 ### 📊 PowerPoint生成
 - テンプレートベースでのPPTXファイル作成
+- 日本語フォント「BIZ UDPGothic」使用
 - ブラウザ経由での直接ダウンロード
-- カスタマイズ可能なスライドレイアウト
+- テキストスライドと表スライドの2種類に対応
 
 ## 技術スタック
 
@@ -62,12 +62,15 @@ slide-agent-mvp/
 │   └── generated_presentation.pptx  # 生成されたファイル
 ├── frontend/                        # React + Vite フロントエンド
 │   ├── src/
-│   │   └── App.jsx                 # Reactメインアプリケーション
+│   │   ├── App.jsx                 # Reactメインアプリケーション
+│   │   └── main.jsx                # Reactエントリーポイント
 │   ├── index.html                  # HTMLエントリーポイント
 │   ├── package.json                # Node.js依存関係
-│   └── package-lock.json           # ロックファイル
-├── Makefile                        # ビルド自動化ファイル
-└── README.md                       # プロジェクトドキュメント
+│   ├── package-lock.json           # ロックファイル
+│   └── vite.config.js              # Vite設定ファイル
+├── myenv/                           # Python仮想環境
+├── Makefile                         # ビルド自動化ファイル（空）
+└── README.md                        # プロジェクトドキュメント
 ```
 
 ## セットアップ・インストール方法
@@ -76,7 +79,6 @@ slide-agent-mvp/
 - Python 3.12以上
 - Node.js 18以上
 - AWS認証情報の設定（~/.aws/credentials）
-
 
 ### 1. リポジトリのクローン
 ```bash
@@ -127,7 +129,7 @@ npm run dev
 ### 3. アプリケーションの使用
 1. ブラウザで `http://localhost:5173` にアクセス
 2. プレゼンテーション内容を日本語で詳細に入力
-3. 「構成案を生成」ボタンをクリック
+3. 「計画案を生成」ボタンをクリック
 4. 生成された構成案を確認
 5. 「承認してPowerPointを作成」ボタンでPPTXファイルをダウンロード
 
@@ -156,13 +158,25 @@ npm run dev
 
 ### APIエンドポイント
 - `GET /` - ヘルスチェック
-- `POST /api/generate-outline` - スライド構成案生成
-- `POST /api/create-presentation` - PowerPointファイル生成
+- `POST /api/generate-plan` - スライド構成案生成
+- `POST /api/create-slides` - PowerPointファイル生成
+
+### 主要コンポーネント
+- `run_supervisor_agent` - プレゼン全体の計画立案 (`backend/main.py:65-88`)
+- `run_text_agent` - テキストスライド内容生成 (`backend/main.py:90-99`)
+- `run_table_agent` - 表スライド内容生成 (`backend/main.py:101-110`)
 
 ### 設定項目
 - **CORS設定**: `http://localhost:5173` (Viteデフォルトポート)
-- **AIモデル**: Claude 3.5 Sonnet (temperature: 0.2)
+- **AIモデル**: Claude 3.5 Sonnet (temperature: 0.1)
 - **PowerPointレイアウト**: テンプレートの5番目のレイアウト使用
+- **日本語フォント**: BIZ UDPGothic
+
+### 処理フロー
+1. **プロンプト入力**: ユーザーが日本語で要件入力
+2. **構成案生成**: AIが「序論・本論・結論」で構成案作成
+3. **プレビュー**: 生成された構成案をリアルタイム表示
+4. **PowerPoint生成**: 各スライドの内容を生成してPPTX作成
 
 ### 開発時の注意点
 - AWS Bedrock APIの利用には適切な認証情報が必要
@@ -173,10 +187,6 @@ npm run dev
 - **AWS認証エラー**: `~/.aws/credentials`の設定を確認
 - **CORS エラー**: バックエンドのCORS設定を確認
 - **PowerPoint生成エラー**: テンプレートファイルの存在を確認
-
-## 非対応（今後拡張検討）
-- [ ] 画像・図表の自動挿入
-- [ ] 生成履歴の保存機能
 
 ## ライセンス
 
