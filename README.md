@@ -1,72 +1,73 @@
-# Slide Agent MVP
+# スライド作成AIエージェント
+written by Claude code
 
 ## 概要
 
-Slide Agent MVPは、生成AIを活用してプレゼンテーション作成を自動化するWebアプリケーションです。
-ユーザーが日本語でプレゼンテーション内容を入力すると、AWS Bedrockを利用して自動的に構成案を作成し、
-生成AIの案をベースにpython-pptxライブラリでスライドを生成、最終的にPowerPointファイルをダウンロードできます。
+スライド作成AIエージェントは、自然言語の入力からPowerPointプレゼンテーションを自動生成するAI駆動システムです。
+AWS Bedrock上のClaude AIモデルとLangChainを活用し、マルチエージェント設計により高品質なプレゼンテーションを効率的に作成します。
 
-役員会向けの提案資料や会議資料など、ビジネスシーンでの効率的なプレゼンテーション作成をサポートします。
+ユーザーは日本語でプレゼンテーションの内容を説明するだけで、
+LLMが「序論・本論・結論」の構成に沿った論理的なスライド構成を提案し、承認後に完全なPowerPointファイルを生成します。
 
 ## 主な機能
 
-### 🎯 プロンプト入力インターフェース
-- 詳細なプレゼンテーション要件を日本語で入力
-- 説明者・被説明者・目的・前提条件の明確化
+### 🤖 インテリジェントなプレゼンテーション設計
+- **計画生成**: 自然言語入力から論理的なスライド構成案を自動生成
+- **構成最適化**: 「序論・本論・結論」フレームワークに基づく説得力のある構成
+- **スライドタイプ選択**: 内容に応じてテキストスライドまたは表スライドの適切な表現方法を自動判定
 
-### 🤖 AI構成案生成
-- LLMによるスライドのストーリー、章構成案の自動作成（AWS Bedrock利用）
-- 「序論・本論・結論」フレームワークに基づく論理的構成
-- 各スライドは、内容からLLMがテキストor表を自動で判定して作成
+### 📊 多様なスライド形式対応
+- **テキストスライド**: 箇条書きによる情報整理
+- **表スライド**: 比較・対照データの構造化表示
+- **フォント統一**: 日本語フォント（BIZ UDPGothic）での一貫したデザイン
 
-### 👀 リアルタイムプレビュー
-- LLMが生成したスライド構成案の表示、ユーザ承認で実行
-- スライドごとの詳細内容確認
-- LLMが考えた章構成の妥当性もきちんと表示、説明してくれる
+### 🎯 マルチエージェント設計
+- **Supervisor Agent**: 全体構成の立案と品質管理
+- **Text Agent**: テキストスライドの内容生成
+- **Table Agent**: 表形式データの構造化
 
-### 📊 PowerPoint生成
-- テンプレートベースでのPPTXファイル作成。テンプレは差し替え可能
+### 🌐 直感的なWebインターフェース
+- **リアルタイム生成**: 進捗状況の可視化
+- **プレビュー機能**: 生成前の構成案確認
+- **ワンクリックダウンロード**: 完成したPowerPointファイルの即座取得
 
 ## 技術スタック
 
 ### バックエンド
-- **FastAPI** - 高性能WebAPIフレームワーク
-- **LangChain** - AI/LLMアプリケーション開発フレームワーク
-- **AWS Bedrock** - LLM推論（今回はClaude 3.5 Sonnetを利用）
-- **python-pptx** - PowerPoint生成ライブラリ
-- **Pydantic** - データバリデーション
-- **uvicorn** - ASGIサーバー
+- **FastAPI**: 高性能なPython Web フレームワーク
+- **LangChain**: LLMアプリケーション開発フレームワーク
+- **AWS Bedrock**: Claude AIモデルの呼び出し
+- **python-pptx**: PowerPoint文書の生成・操作
 
 ### フロントエンド
-- **React 18** - UIフレームワーク
-- **Vite 5.2** - 高速開発環境・ビルドツール
-- **Axios** - HTTP通信ライブラリ
-- **インラインCSS** - レスポンシブデザイン
+- **React 18**: モダンなUIライブラリ
+- **Vite**: 高速な開発環境とビルドツール
+- **Axios**: HTTP通信ライブラリ
 
-### インフラ・開発環境
-- **Python 3.12.3** - バックエンド実行環境
-- **Node.js** - フロントエンド開発環境
-- **AWS認証** - Bedrock API アクセス
+### インフラストラクチャ
+- **Docker**: コンテナ化によるデプロイメント
+- **uvicorn**: ASGIサーバー
 
 ## ディレクトリ構造
 
 ```
 slide-agent-mvp/
-├── backend/                          # FastAPI + LangChain バックエンド
-│   ├── main.py                      # メインAPIサーバー
-│   ├── requirements.txt             # Python依存関係
-│   ├── template.pptx               # PowerPointテンプレート
-│   └── generated_presentation.pptx  # 生成されたファイル
-├── frontend/                        # React + Vite フロントエンド
-│   ├── src/
-│   │   ├── App.jsx                 # Reactメインアプリケーション
-│   │   └── main.jsx                # Reactエントリーポイント
-│   ├── index.html                  # HTMLエントリーポイント
-│   ├── package.json                # Node.js依存関係
-│   ├── package-lock.json           # ロックファイル
-│   └── vite.config.js              # Vite設定ファイル
-├── Makefile                         # ビルド自動化ファイル（空）
-└── README.md                        # プロジェクトドキュメント
+├── README.md                   # プロジェクトドキュメント
+├── Dockerfile                  # マルチステージビルド設定
+├── Makefile                    # ビルド自動化（現在空）
+├── backend/                   # バックエンドアプリケーション
+│   ├── main.py               # FastAPIアプリケーション本体
+│   ├── requirements.txt      # Python依存関係
+│   ├── template.pptx        # PowerPointテンプレート
+└── frontend/                  # フロントエンドアプリケーション
+    ├── package.json          # Node.js依存関係
+    ├── package-lock.json     # 依存関係ロック
+    ├── vite.config.js        # Vite設定
+    ├── index.html            # HTMLテンプレート
+    ├── node_modules/         # Node.js依存関係
+    └── src/
+        ├── App.jsx           # メインReactコンポーネント
+        └── main.jsx          # Reactアプリケーション起動点
 ```
 
 ## セットアップ・インストール方法
@@ -74,7 +75,8 @@ slide-agent-mvp/
 ### 前提条件
 - Python 3.12以上
 - Node.js 18以上
-- AWS認証情報の設定（~/.aws/credentials）
+- Docker（オプション）
+- AWS アカウント（Bedrock利用）
 
 ### 1. リポジトリのクローン
 ```bash
@@ -82,112 +84,175 @@ git clone <repository-url>
 cd slide-agent-mvp
 ```
 
-### 2. バックエンドのセットアップ
+### 2. 環境変数の設定（AWS認証情報）
 ```bash
-# 仮想環境のアクティベート
-source myenv/bin/activate
+# .envファイルを作成し、以下の環境変数を設定
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=us-east-1
+```
+
+### 3. バックエンドのセットアップ
+```bash
+# 仮想環境の作成と有効化
+python -m venv myenv
+source myenv/bin/activate  # Linux/Mac
+# または
+myenv\Scripts\activate  # Windows
 
 # 依存関係のインストール
 cd backend
 pip install -r requirements.txt
 ```
 
-### 3. フロントエンドのセットアップ
+### 4. フロントエンドのセットアップ
 ```bash
 cd frontend
 npm install
 ```
 
-### 4. AWS認証情報の設定
+### 5. Dockerを使用した起動（推奨）
 ```bash
-# ~/.aws/credentials ファイルに以下を追加
-[default]
-aws_access_key_id = YOUR_ACCESS_KEY
-aws_secret_access_key = YOUR_SECRET_KEY
-region = us-east-1
+# プロジェクトルートで実行
+docker build -t slide-agent-mvp .
+docker run -p 8000:8000 --env-file .env slide-agent-mvp
 ```
 
 ## 使用方法
 
-### 1. バックエンドサーバーの起動
+### 開発環境での起動
+
+#### バックエンド起動
 ```bash
 cd backend
 source ../myenv/bin/activate
-uvicorn main:app --reload --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 2. フロントエンドサーバーの起動
+#### フロントエンド起動
 ```bash
 cd frontend
 npm run dev
 ```
 
-### 3. アプリケーションの使用
-1. ブラウザで `http://localhost:5173` にアクセス
-2. プレゼンテーション内容を日本語で詳細に入力
-3. 「計画案を生成」ボタンをクリック
-4. 生成された構成案を確認
-5. 「承認してPowerPointを作成」ボタンでPPTXファイルをダウンロード
-
-### 入力例
+### 本番環境での起動
+```bash
+# Dockerを使用
+docker build -t slide-agent-mvp .
+docker run -p 8000:8000 --env-file .env slide-agent-mvp
 ```
-オフィスのペーパーレス化推進に関する課題と解決策を役員会に提案するスライドを作成してください。
 
-【説明したい内容】
-・現状の紙文書による課題（コスト、管理工数、セキュリティリスク）
-・ペーパーレス化のメリット（具体例を挙げて）
-・導入するシステム案（クラウド型文書管理システム）
-・導入にかかる費用と費用対効果
-・今後のロードマップ
+### 基本的な使用手順
 
-【説明者】
-総務部 部長
+1. **アプリケーションにアクセス**: `http://localhost:8000`
+2. **プロンプト入力**: 作成したいプレゼンテーションの内容を自然言語で入力
+   ```
+   例: 主要SNSであるX, Instagram, Facebookの機能、ユーザー層、広告特性を比較するプレゼン
+   ```
+3. **計画案生成**: 「計画案を生成」ボタンをクリック
+4. **計画確認**: 生成された構成案とその根拠を確認
+5. **PowerPoint生成**: 「承認してPowerPointを作成」ボタンをクリック
+6. **ファイルダウンロード**: 生成されたPowerPointファイルが自動ダウンロード
 
-【被説明者】
-役員会メンバー（意思決定者）
+### API仕様
 
-【説明目的】
-ペーパーレス化プロジェクトの予算承認と、全社的な取り組み推進の合意形成を得ること。
+#### POST /api/generate-plan
+プレゼンテーション計画を生成
+```json
+{
+  "prompt": "プレゼンテーションの内容説明"
+}
+```
+
+#### POST /api/create-slides
+計画に基づいてPowerPointファイルを生成
+```json
+{
+  "plan": [...],
+  "rationale": "構成の根拠"
+}
 ```
 
 ## 開発者向け情報
 
-### APIエンドポイント
-- `GET /` - ヘルスチェック
-- `POST /api/generate-plan` - スライド構成案生成
-- `POST /api/create-slides` - PowerPointファイル生成
+### アーキテクチャ設計
 
-### 主要コンポーネント
-- `run_supervisor_agent` - プレゼン全体の計画立案 (`backend/main.py:65-88`)
-- `run_text_agent` - テキストスライド内容生成 (`backend/main.py:90-99`)
-- `run_table_agent` - 表スライド内容生成 (`backend/main.py:101-110`)
+#### マルチエージェント設計
+システムは3つの専門エージェントで構成：
 
-### 設定項目
-- **CORS設定**: `http://localhost:5173` (Viteデフォルトポート)
-- **AIモデル**: Claude 3.5 Sonnet (temperature: 0.1) 一例であり必須ではない
-- **PowerPointレイアウト**: テンプレートの5番目のレイアウト使用
-- **日本語フォント**: BIZ UDPGothic （変更可能）
+1. **Supervisor Agent** (`run_supervisor_agent`)
+   - 全体構成の立案
+   - 序論・本論・結論フレームワークの適用
+   - スライドタイプの自動判定
 
-### 処理フロー
-1. **プロンプト入力**: ユーザーが日本語で要件入力
-2. **構成案生成**: AIが「序論・本論・結論」で構成案作成
-3. **プレビュー**: 生成された構成案をリアルタイム表示
-4. **PowerPoint生成**: 各スライドの内容を生成し、python-pptxでPPTX作成
+2. **Text Agent** (`run_text_agent`)
+   - テキストスライドの内容生成
+   - 箇条書き形式の情報整理
 
-### 開発時の注意点
-- AWS Bedrock APIの利用には適切な認証情報が必要
-- PowerPointテンプレート(`template.pptx`)の存在を確認
-- フロントエンドとバックエンドの両方を起動する必要あり
+3. **Table Agent** (`run_table_agent`)
+   - 表形式データの構造化
+   - 比較・対照情報の表組み
+
+#### データフロー
+```
+ユーザー入力 → Supervisor Agent → 計画生成 → 承認 → 
+各スライド（Text/Table Agent） → PowerPoint生成 → ダウンロード
+```
+
+### カスタマイズ方法
+
+#### AIモデルの変更
+`backend/main.py`の`llm`設定を変更：
+```python
+llm = ChatBedrock(
+    model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",  # モデルID変更
+    model_kwargs={"temperature": 0.1},
+)
+```
+
+#### PowerPointテンプレート
+`backend/template.pptx`を独自のテンプレートに置換可能
+
+#### スライドレイアウト
+`draw_table_on_slide`関数でテーブルレイアウトをカスタマイズ
 
 ### トラブルシューティング
-- **AWS認証エラー**: `~/.aws/credentials`の設定を確認
-- **CORS エラー**: バックエンドのCORS設定を確認
-- **PowerPoint生成エラー**: テンプレートファイルの存在を確認
+
+#### よくある問題
+1. **AWS認証エラー**: 環境変数の設定を確認
+2. **依存関係エラー**: 仮想環境の有効化を確認
+3. **ポート競合**: 既存のプロセスを停止後に再起動
+4. **フォントエラー**: システムにBIZ UDPGothicフォントをインストール
+
+#### デバッグ方法
+```bash
+# バックエンドログの確認
+uvicorn main:app --reload --log-level debug
+
+# フロントエンドデバッグ
+npm run dev -- --debug
+```
 
 ## ライセンス
 
-このプロジェクトは開発中のMVP（Minimum Viable Product）です。
+MIT License
 
----
+Copyright (c) 2024 Slide Agent MVP
 
-**Note**: このアプリケーションはAWS Bedrockを使用するため、API利用料金が発生します。使用前に料金体系をご確認ください。
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
