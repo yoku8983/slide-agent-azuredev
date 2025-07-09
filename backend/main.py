@@ -1,4 +1,5 @@
 import asyncio
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,6 +64,7 @@ llm = ChatBedrock(
 #    model_id="us.meta.llama3-3-70b-instruct-v1:0",
     model_kwargs={"temperature": 0.1},
 )
+
 
 async def run_supervisor_agent(user_prompt: str) -> PresentationPlan:
     """プレゼン全体の計画を立案するエージェント関数"""
@@ -144,15 +146,16 @@ async def create_slides(presentation_plan: PresentationPlan):
                     result = await run_table_agent(slide_plan.topic)
                 else:
                     continue # 未知のスライドタイプの場合はスキップ
-
+                
+                
                 # 2. 生成された内容をすぐにPowerPointに書き込む
                 slide = prs.slides.add_slide(title_and_content_layout)
                 title_shape = slide.shapes.title
                 
                 if isinstance(result, TextSlideContent):
-                    title_shape.text = result.title
+                    title_shape.text = sanitize_text(result.title) 
                     content_shape = slide.placeholders[1]
-                    content_shape.text = result.content
+                    content_shape.text = sanitize_text(result.content)
                     
                     # テキストに合わせてフォントサイズを自動調整
                     content_shape.text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
@@ -162,10 +165,20 @@ async def create_slides(presentation_plan: PresentationPlan):
                     set_font_for_shape(content_shape, "BIZ UDPGothic")
 
                 elif isinstance(result, TableSlideContent):
-                    title_shape.text = result.title
+                    title_shape.text = sanitize_text(result.title)
                     set_font_for_shape(title_shape, "BIZ UDPGothic")
                     slide.placeholders[1].text_frame.clear() # 本文プレースホルダーをクリア
                     draw_table_on_slide(slide, prs, result.table_data)
+
+                # for debug
+                print(f"--- Writing Slide {i+1} ---")
+                print(f"Type: {slide_plan.slide_type}")
+                if isinstance(result, TextSlideContent):
+                    print(f"Title: {repr(result.title)}")
+                    print(f"Content: {repr(result.content)}")
+                elif isinstance(result, TableSlideContent):
+                    print(f"Title: {repr(result.title)}")
+                    print(f"Table Data: {result.table_data}")
 
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"スライド {i + 1} (トピック: '{slide_plan.topic}') の生成に失敗しました: {e}")
@@ -185,6 +198,25 @@ async def create_slides(presentation_plan: PresentationPlan):
 
 # --- 5. PowerPoint生成ヘルパー関数 ---
 
+def sanitize_text(text):
+    """テキストをサニタイズする最終版：制御文字、特殊ダッシュ、前後の空白を除去"""
+    if text is None:
+        return ""
+    
+    clean_text = str(text)
+
+    # 1. 制御文字を削除（既存の処理）
+    clean_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', clean_text)
+    
+    # 2. 様々な種類のダッシュやハイフンを、標準的な半角ハイフンマイナスに統一
+    # U+2010 (HYPHEN) から U+2015 (HORIZONTAL BAR) までの範囲を対象
+    dash_chars = r'[\u2010-\u2015]'
+    clean_text = re.sub(dash_chars, '-', clean_text)
+    
+    # 3. 前後の空白を削除（既存の処理）
+    return clean_text.strip()
+
+
 def set_font_for_shape(shape, font_name):
     """指定されたシェイプ内のすべてのテキストにフォントを適用する"""
     if not hasattr(shape, 'text_frame'):
@@ -194,38 +226,55 @@ def set_font_for_shape(shape, font_name):
             run.font.name = font_name
 
 def draw_table_on_slide(slide, prs, table_data: TableData):
-    """スライドにテーブルを描画し、中央に配置・フォント設定する"""
-    rows, cols = len(table_data.rows) + 1, len(table_data.headers)
-    table_width = Inches(9.0)
-    table_height = Inches(0.5 * rows if rows > 1 else 1.0) # 行数に応じて高さを動的に調整
+    """【改善版】スライドにテーブルを描画する関数"""
+    rows_count = len(table_data.rows) + 1
+    cols_count = len(table_data.headers)
     
-    # 中央配置のための座標計算
+    # 列がない場合はテーブルを作成しない
+    if cols_count == 0:
+        return
+
+    table_width = Inches(9.0)
     left = (prs.slide_width - table_width) / 2
     top = Inches(1.8)
     
-    shape = slide.shapes.add_table(rows, cols, left, top, table_width, table_height)
+    # 先にダミーの高さでテーブルを作成
+    shape = slide.shapes.add_table(rows_count, cols_count, left, top, table_width, Inches(1))
     table = shape.table
 
-    # ヘッダーのスタイル設定
+    # --- ヘッダーの入力 ---
     for i, header in enumerate(table_data.headers):
         cell = table.cell(0, i)
-        cell.text = header
-        set_font_for_shape(cell, "BIZ UDPGothic")
-        cell.text_frame.paragraphs[0].font.bold = True
-        cell.text_frame.paragraphs[0].font.size = Pt(14)
+        cell.text = sanitize_text(header)
+        # フォント設定
+        p = cell.text_frame.paragraphs[0]
+        p.font.name = "BIZ UDPGothic"
+        p.font.bold = True
+        p.font.size = Pt(14)
 
-    # データ行のスタイル設定
-    for r, row_data in enumerate(table_data.rows):
-        for c, cell_text in enumerate(row_data):
-            cell = table.cell(r + 1, c)
-            cell.text = str(cell_text) # 数値なども文字列に変換
-            set_font_for_shape(cell, "BIZ UDPGothic")
-            cell.text_frame.paragraphs[0].font.size = Pt(12)
-    
-    # 全セルの垂直方向の配置を中央に設定
+    # --- データ行の入力 ---
+    for r_idx, row_data in enumerate(table_data.rows):
+        # AIが生成する列数がヘッダー数と違う可能性を考慮
+        for c_idx, cell_text in enumerate(row_data):
+            if c_idx < cols_count:
+                cell = table.cell(r_idx + 1, c_idx)
+                cell.text = sanitize_text(str(cell_text))
+                # フォント設定
+                p = cell.text_frame.paragraphs[0]
+                p.font.name = "BIZ UDPGothic"
+                p.font.size = Pt(12)
+
+    # --- レイアウト調整（ここが重要） ---
+    # 各行に固定の高さを設定し、テキストの折り返しを確実にする
+    # 内容の量によらず、行の高さを固定することでレイアウトの破綻を防ぐ
+    for row in table.rows:
+        row.height = Inches(0.4) # 少し余裕のある高さを設定
+
     for row in table.rows:
         for cell in row.cells:
-            cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+            cell.vertical_anchor = MSO_ANCHOR.MIDDLE # 上下中央揃え
+            if not cell.text_frame.word_wrap:
+                cell.text_frame.word_wrap = True # 自動折り返しを有効化
 
 
 # "static"ディレクトリ内のファイルを配信し、ルートパス("/")へのアクセスでindex.htmlを返す設定

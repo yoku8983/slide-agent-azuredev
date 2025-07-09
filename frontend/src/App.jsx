@@ -31,6 +31,7 @@ function App() {
 
   const handleCreateSlides = async () => {
     if (!plan) return;
+    console.log("Sending this data to /api/create-slides:", JSON.stringify(plan, null, 2));
     setIsLoading(true);
     setError('');
     try {
