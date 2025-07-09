@@ -21,7 +21,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"], # すべてのオリジンを許可する
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
+// const API_URL = 'http://localhost:8000';
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -18,7 +18,7 @@ function App() {
     setError('');
     setPlan(null);
     try {
-      const response = await axios.post(`${API_URL}/api/generate-plan`, { prompt });
+      const response = await axios.post('/api/generate-plan', { prompt });
       setPlan(response.data);
     } catch (err) {
       const errorMessage = err.response?.data?.detail || '計画案の生成に失敗しました。サーバー側のログを確認してください。';
@@ -34,7 +34,7 @@ function App() {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.post(`${API_URL}/api/create-slides`, plan, {
+      const response = await axios.post('/api/create-slides', plan, {
         responseType: 'blob',
       });
       
