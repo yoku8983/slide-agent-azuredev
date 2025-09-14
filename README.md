@@ -25,7 +25,8 @@ nano .env  # またはお好みのエディタで
 ```
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_API_KEY=実際のAPIキー
-AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5-mini
+AZURE_OPENAI_API_VERSION=2024-12-01-preview
 ```
 
 ### 2. ローカルテスト
@@ -149,6 +150,14 @@ ACRにプッシュ後、Azure Portal から Container Apps を作成：
    - `AZURE_OPENAI_API_KEY`
    - `AZURE_OPENAI_DEPLOYMENT_NAME`
    - `AZURE_OPENAI_API_VERSION`
+
+```
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_KEY=実際のAPIキー
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5-mini
+AZURE_OPENAI_API_VERSION=2024-12-01-preview
+```
+
 6. イングレス設定：
    - HTTPトラフィック：有効
    - ターゲットポート：8000
