@@ -1,44 +1,56 @@
 # Stage 1: フロントエンドのビルドステージ
-# Node.js環境を使用してReactアプリケーションをビルドします。
 FROM node:18-alpine AS builder
 
 WORKDIR /app/frontend
 
-# 依存関係ファイルを先にコピーし、キャッシュを活用します。
+# 依存関係ファイルを先にコピーし、キャッシュを活用
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci --only=production
 
-# フロントエンドのソースコードを全てコピーします。
+# フロントエンドのソースコードをコピー
 COPY frontend/ ./
 
-# 本番用の静的ファイルを生成します。
+# 本番用の静的ファイルを生成
 RUN npm run build
 
 
-# Stage 2: バックエンドの実行ステージ
-# Python環境をセットアップし、ビルド済みのフロントエンドとバックエンドサーバーを配置します。
+# Stage 2: バックエンドの実行ステージ（マルチステージビルドで軽量化）
 FROM python:3.12-slim
 
+# 作業ディレクトリを設定
 WORKDIR /app
 
-# 環境変数を設定し、Pythonのログ出力を最適化します。
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# 環境変数を設定（Pythonの最適化）
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# 必要なPythonライブラリをインストールします。
+# システムパッケージの更新と必要なツールのインストール
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pythonの依存関係をインストール
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# バックエンドのソースコードとPowerPointテンプレートをコピーします。
+# バックエンドのソースコードをコピー
 COPY backend/ ./
 
-# Stage 1でビルドしたフロントエンドの静的ファイルをコピーします。
-# FastAPIから配信できるように`static`ディレクトリに配置します。
+# Stage 1でビルドしたフロントエンドの静的ファイルをコピー
 COPY --from=builder /app/frontend/dist ./static
 
-# コンテナがリッスンするポートを公開します。
+# 非rootユーザーを作成して実行（セキュリティ向上）
+RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# ヘルスチェック用のエンドポイント追加
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
+
+# Azure Container Appsは環境変数PORTを使用
 EXPOSE 8000
 
-# アプリケーションサーバーを起動します。
-# 0.0.0.0を指定することで、コンテナ外部からのアクセスを許可します。
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# アプリケーションサーバーを起動
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

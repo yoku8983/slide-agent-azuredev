@@ -1,268 +1,209 @@
-# スライド作成AIエージェント
-written by Claude code
+# スライド作成AIエージェント - Azure版
 
-## 概要
+## 変更点の概要
 
-スライド作成AIエージェントは、自然言語の入力からPowerPointプレゼンテーションを自動生成するAI駆動システムです。
-AWS Bedrock上のClaude AIモデルとLangChainを活用し、マルチエージェント設計により高品質なプレゼンテーションを効率的に作成します。
+このバージョンは、元のAWS Bedrock版から以下の変更を加えています：
 
-ユーザーは日本語でプレゼンテーションの内容を説明するだけで、
-LLMが「序論・本論・結論」の構成に沿った論理的なスライド構成を提案し、承認後に完全なPowerPointファイルを生成します。
+- **AI推論エンジン**: AWS Bedrock → Azure OpenAI Service
+- **デプロイ環境**: AWS → Azure Container Apps (ACA)
+- **コンテナレジストリ**: Docker Hub/ECR → Azure Container Registry (ACR)
 
-## 主な機能
+## 前提条件
 
-### 🤖 インテリジェントなプレゼンテーション設計
-- **計画生成**: 自然言語入力から論理的なスライド構成案を自動生成
-- **構成最適化**: 「序論・本論・結論」フレームワークに基づく説得力のある構成
-- **スライドタイプ選択**: 内容に応じてテキストスライドまたは表スライドの適切な表現方法を自動判定
-
-### 📊 多様なスライド形式対応
-- **テキストスライド**: 箇条書きによる情報整理
-- **表スライド**: 比較・対照データの構造化表示
-- **フォント統一**: 日本語フォント（BIZ UDPGothic）での一貫したデザイン
-
-### 🎯 マルチエージェント設計
-- **Supervisor Agent**: 全体構成の立案と品質管理
-- **Text Agent**: テキストスライドの内容生成
-- **Table Agent**: 表形式データの構造化
-
-### 🌐 直感的なWebインターフェース
-- **リアルタイム生成**: 進捗状況の可視化
-- **プレビュー機能**: 生成前の構成案確認
-- **ワンクリックダウンロード**: 完成したPowerPointファイルの即座取得
-
-## 技術スタック
-
-### バックエンド
-- **FastAPI**: 高性能なPython Web フレームワーク
-- **LangChain**: LLMアプリケーション開発フレームワーク
-- **AWS Bedrock**: Claude AIモデルの呼び出し
-- **python-pptx**: PowerPoint文書の生成・操作
-
-### フロントエンド
-- **React 18**: モダンなUIライブラリ
-- **Vite**: 高速な開発環境とビルドツール
-- **Axios**: HTTP通信ライブラリ
-
-### インフラストラクチャ
-- **Docker**: コンテナ化によるデプロイメント
-- **uvicorn**: ASGIサーバー
-
-## ディレクトリ構造
-
-```
-slide-agent-mvp/
-├── README.md                   # プロジェクトドキュメント
-├── Dockerfile                  # マルチステージビルド設定
-├── Makefile                    # ビルド自動化（現在空）
-├── backend/                   # バックエンドアプリケーション
-│   ├── main.py               # FastAPIアプリケーション本体
-│   ├── requirements.txt      # Python依存関係
-│   ├── template.pptx        # PowerPointテンプレート
-└── frontend/                  # フロントエンドアプリケーション
-    ├── package.json          # Node.js依存関係
-    ├── package-lock.json     # 依存関係ロック
-    ├── vite.config.js        # Vite設定
-    ├── index.html            # HTMLテンプレート
-    ├── node_modules/         # Node.js依存関係
-    └── src/
-        ├── App.jsx           # メインReactコンポーネント
-        └── main.jsx          # Reactアプリケーション起動点
-```
-
-## セットアップ・インストール方法
-
-### 前提条件
-- Python 3.12以上
+### 必要なツール
+- Docker Desktop
+- Azure CLI (`az` コマンド)
 - Node.js 18以上
-- Docker（オプション）
-- AWS アカウント（Bedrock利用）
+- Python 3.12以上
 
-### 1. リポジトリのクローン
+### Azure リソース
+- Azure サブスクリプション
+- Azure OpenAI Service リソース（GPTモデルがデプロイ済み）
+- Azure Container Registry (ACR)
+- Azure Container Apps 環境
+
+## セットアップ手順
+
+### 1. Azure OpenAI Service の準備
+
+1. Azure Portal で Azure OpenAI Service リソースを作成
+2. GPT モデルをデプロイ
+3. エンドポイントとAPIキーを取得
+
+### 2. Azure リソースの作成
+
 ```bash
-git clone <repository-url>
-cd slide-agent-mvp
+# リソースグループの作成
+az group create --name slide-agent-rg --location japaneast
+
+# Azure Container Registry の作成
+az acr create --resource-group slide-agent-rg \
+  --name slideagentacr \
+  --sku Basic
+
+# Container Apps 環境の作成
+az containerapp env create \
+  --name slide-agent-env \
+  --resource-group slide-agent-rg \
+  --location japaneast
 ```
 
-### 2. 環境変数の設定（AWS認証情報）
+### 3. 環境変数の設定
+
+`.env.example` を `.env` にコピーして編集：
+
 ```bash
-# .envファイルを作成し、以下の環境変数を設定
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_DEFAULT_REGION=us-east-1
+cp .env.example .env
 ```
 
-### 3. バックエンドのセットアップ
+`.env` ファイルを編集：
+```env
+# Azure OpenAI Service設定
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_KEY=your-api-key-here
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+
+# Azure Container Registry設定
+ACR_NAME=slideagentacr
+ACR_LOGIN_SERVER=slideagentacr.azurecr.io
+RESOURCE_GROUP=slide-agent-rg
+ACA_ENVIRONMENT=slide-agent-env
+ACA_APP_NAME=slide-agent-app
+```
+
+### 4. ローカルでのテスト
+
+#### Docker Compose を使用
 ```bash
-# 仮想環境の作成と有効化
-python -m venv myenv
-source myenv/bin/activate  # Linux/Mac
-# または
-myenv\Scripts\activate  # Windows
+# イメージのビルドと起動
+docker-compose up --build
 
-# 依存関係のインストール
-cd backend
-pip install -r requirements.txt
+# ブラウザでアクセス
+open http://localhost:8000
 ```
 
-### 4. フロントエンドのセットアップ
+#### 手動でのテスト
 ```bash
-cd frontend
-npm install
+# Dockerイメージのビルド
+docker build -t slide-agent-local .
+
+# コンテナの起動
+docker run -p 8000:8000 --env-file .env slide-agent-local
 ```
 
-### 5. Dockerを使用した起動（推奨）
+### 5. Azure へのデプロイ
+
+手動でデプロイ：
+
 ```bash
-# プロジェクトルートで実行
-docker build -t slide-agent-mvp .
-docker run -p 8000:8000 --env-file .env slide-agent-mvp
+# Azure にログイン
+az login
+
+# ACR にログイン
+az acr login --name slideagentacr
+
+# イメージのビルドとプッシュ
+docker build -t slideagentacr.azurecr.io/slide-agent:latest .
+docker push slideagentacr.azurecr.io/slide-agent:latest
+
+# Container App の作成
+az containerapp create \
+  --name slide-agent-app \
+  --resource-group slide-agent-rg \
+  --environment slide-agent-env \
+  --image slideagentacr.azurecr.io/slide-agent:latest \
+  --target-port 8000 \
+  --ingress external \
+  --registry-server slideagentacr.azurecr.io \
+  --cpu 0.5 \
+  --memory 1.0Gi \
+  --min-replicas 0 \
+  --max-replicas 10
 ```
 
-## 使用方法
+## 主な変更ファイル
 
-### 開発環境での起動
+### backend/main.py
+- `langchain_aws.ChatBedrock` → `langchain_openai.AzureChatOpenAI`
+- AWS認証情報 → Azure OpenAI APIキーとエンドポイント
+- ヘルスチェックエンドポイントを追加
 
-#### バックエンド起動
+### backend/requirements.txt
+- `langchain-aws` と `boto3` を削除
+- `langchain-openai` と `openai` を追加
+
+### Dockerfile
+- マルチステージビルドで最適化
+- 非rootユーザーでの実行
+- ヘルスチェックの追加
+- Azure Container Apps の PORT 環境変数対応
+
+## トラブルシューティング
+
+### Azure OpenAI のレート制限エラー
+- デプロイメントのTPM（Tokens Per Minute）制限を確認
+- `asyncio.sleep()` の待機時間を調整
+
+### Container Apps のデプロイエラー
 ```bash
-cd backend
-source ../myenv/bin/activate
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# ログの確認
+az containerapp logs show \
+  --name slide-agent-app \
+  --resource-group slide-agent-rg \
+  --follow
+
+# リビジョンの確認
+az containerapp revision list \
+  --name slide-agent-app \
+  --resource-group slide-agent-rg
 ```
 
-#### フロントエンド起動
+### メモリ不足エラー
+Container Apps の設定を調整：
 ```bash
-cd frontend
-npm run dev
+az containerapp update \
+  --name slide-agent-app \
+  --resource-group slide-agent-rg \
+  --cpu 1.0 \
+  --memory 2.0Gi
 ```
 
-### 本番環境での起動
+## パフォーマンス最適化
+
+### コールドスタート対策
 ```bash
-# Dockerを使用
-docker build -t slide-agent-mvp .
-docker run -p 8000:8000 --env-file .env slide-agent-mvp
+# 最小レプリカ数を1に設定
+az containerapp update \
+  --name slide-agent-app \
+  --resource-group slide-agent-rg \
+  --min-replicas 1
 ```
 
-### 基本的な使用手順
-
-1. **アプリケーションにアクセス**: `http://localhost:8000`
-2. **プロンプト入力**: 作成したいプレゼンテーションの内容を自然言語で入力
-   ```
-例:
-テーマ：「AIを活用した業務効率化」
-目的： 社内業務におけるAI導入のメリットと具体的な活用事例を共有し、効率化への意識を高める。
-スライドは6枚以内で作成すること。
-説明したい内容：
-AIの基礎知識と種類
-業務効率化におけるAIの役割
-社内での具体的なAI導入事例（データ分析、自動応答など）
-導入によるコスト削減と生産性向上効果
-説明者： 企画部 AI推進チーム リーダー 佐藤
-被説明者： 各部署の業務担当者、管理職
-   ```
-3. **計画案生成**: 「計画案を生成」ボタンをクリック
-4. **計画確認**: 生成された構成案とその根拠を確認
-5. **PowerPoint生成**: 「承認してPowerPointを作成」ボタンをクリック
-6. **ファイルダウンロード**: 生成されたPowerPointファイルが自動ダウンロード
-
-### API仕様
-
-#### POST /api/generate-plan
-プレゼンテーション計画を生成
-```json
-{
-  "prompt": "プレゼンテーションの内容説明"
-}
-```
-
-#### POST /api/create-slides
-計画に基づいてPowerPointファイルを生成
-```json
-{
-  "plan": [...],
-  "rationale": "構成の根拠"
-}
-```
-
-## 開発者向け情報
-
-### アーキテクチャ設計
-
-#### マルチエージェント設計
-システムは3つの専門エージェントで構成：
-
-1. **Supervisor Agent** (`run_supervisor_agent`)
-   - 全体構成の立案
-   - 序論・本論・結論フレームワークの適用
-   - スライドタイプの自動判定
-
-2. **Text Agent** (`run_text_agent`)
-   - テキストスライドの内容生成
-   - 箇条書き形式の情報整理
-
-3. **Table Agent** (`run_table_agent`)
-   - 表形式データの構造化
-   - 比較・対照情報の表組み
-
-#### データフロー
-```
-ユーザー入力 → Supervisor Agent → 計画生成 → 承認 → 
-各スライド（Text/Table Agent） → PowerPoint生成 → ダウンロード
-```
-
-### カスタマイズ方法
-
-#### AIモデルの変更
-`backend/main.py`の`llm`設定を変更：
-```python
-llm = ChatBedrock(
-    model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",  # モデルID変更
-    model_kwargs={"temperature": 0.1},
-)
-```
-
-#### PowerPointテンプレート
-`backend/template.pptx`を独自のテンプレートに置換可能
-
-#### スライドレイアウト
-`draw_table_on_slide`関数でテーブルレイアウトをカスタマイズ
-
-### トラブルシューティング
-
-#### よくある問題
-1. **AWS認証エラー**: 環境変数の設定を確認
-2. **依存関係エラー**: 仮想環境の有効化を確認
-3. **ポート競合**: 既存のプロセスを停止後に再起動
-4. **フォントエラー**: システムにBIZ UDPGothicフォントをインストール
-
-#### デバッグ方法
+### スケーリング設定
 ```bash
-# バックエンドログの確認
-uvicorn main:app --reload --log-level debug
-
-# フロントエンドデバッグ
-npm run dev -- --debug
+# HTTPスケーリングルールの設定
+az containerapp update \
+  --name slide-agent-app \
+  --resource-group slide-agent-rg \
+  --scale-rule-name http-rule \
+  --scale-rule-type http \
+  --scale-rule-http-concurrency 10
 ```
+
+## セキュリティ考慮事項
+
+1. **APIキーの管理**: Azure Key Vault の利用を推奨
+2. **ネットワーク制限**: 必要に応じてVNET統合を設定
+3. **CORS設定**: 本番環境では適切なオリジンを指定
+4. **認証**: Azure AD認証の追加を検討
+
+## コスト最適化
+
+- **自動スケーリング**: 最小レプリカを0に設定してコスト削減
+- **リソース割り当て**: 実際の使用量に基づいてCPU/メモリを調整
+- **リージョン選択**: 利用者に近いリージョンを選択
 
 ## ライセンス
 
 MIT License
-
-Copyright (c) 2024 Slide Agent MVP
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.

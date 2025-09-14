@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import List, Literal
 
-from langchain_aws import ChatBedrock
+from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 
@@ -55,13 +55,7 @@ class UserInput(BaseModel):
 
 # --- 3. LLMと専門エージェント関数の定義 ---
 llm = ChatBedrock(
-#    model_id="us.anthropic.claude-sonnet-4-20250514-v1:0",
     model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
-#    model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-#    model_id="us.anthropic.claude-3-5-sonnet-20240620-v1:0",
-#    model_id="us.amazon.nova-pro-v1:0",
-#    model_id="us.amazon.nova-premier-v1:0",
-#    model_id="us.meta.llama3-3-70b-instruct-v1:0",
     model_kwargs={"temperature": 0.1},
 )
 

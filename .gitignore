@@ -1,4 +1,3 @@
-
 # バイトコードや最適化されたファイル、DLL
 __pycache__/
 *.py[cod]
@@ -97,7 +96,10 @@ __pypackages__/
 
 # 環境ファイル
 .env
+.env.local
+.env.production
 backend/.env
+*.env
 
 # mkdocsドキュメント
 /site
@@ -118,15 +120,64 @@ cython_debug/
 
 # VS Code関連
 .vscode/
+*.code-workspace
 
 # IntelliJ関連
 .idea/
+*.iml
 
 # MacOS関連
 .DS_Store
+*.AppleDouble
+.LSOverride
+
+# Windows関連
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # ログファイル
 *.log
+logs/
 
-# その他
+# Node.js関連
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# フロントエンドビルド成果物
+frontend/dist/
+frontend/build/
+
+# PowerPoint生成ファイル
 backend/generated_presentation*.pptx
+*.pptx
+!backend/template.pptx
+
+# Docker関連
+.dockerignore
+docker-compose.override.yml
+
+# Azure関連
+*.publishsettings
+*.pubxml
+*.azureauth
+azure.err
+azure-*.json
+.azure/
+
+# 一時ファイル
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# バックアップファイル
+*.bak
+*.backup
+
+# テスト用ファイル
+test_*.pptx
+test_output/
