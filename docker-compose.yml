@@ -11,9 +11,9 @@ services:
       - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
       - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
     env_file:
-      - ./backend/.env
-    volumes:
-      # 開発中のホットリロード用（オプション）
-      - ./backend:/app
-      - ./frontend/dist:/app/static
+      - .env
+#    volumes:
+#      # 開発中のホットリロード用（オプション）
+#      - ./backend:/app
+#      - ./frontend/dist:/app/static
     restart: unless-stopped

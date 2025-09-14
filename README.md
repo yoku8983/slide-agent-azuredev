@@ -1,209 +1,158 @@
-# スライド作成AIエージェント - Azure版
+# スライド作成AIエージェント - Azure OpenAI版
 
-## 変更点の概要
-
-このバージョンは、元のAWS Bedrock版から以下の変更を加えています：
-
-- **AI推論エンジン**: AWS Bedrock → Azure OpenAI Service
-- **デプロイ環境**: AWS → Azure Container Apps (ACA)
-- **コンテナレジストリ**: Docker Hub/ECR → Azure Container Registry (ACR)
+## 概要
+AWS Bedrock版から Azure OpenAI Service版への移行版です。
+ローカルでの動作確認後、Azure Container Registry (ACR) にプッシュできます。
 
 ## 前提条件
-
-### 必要なツール
-- Docker Desktop
-- Azure CLI (`az` コマンド)
-- Node.js 18以上
-- Python 3.12以上
-
-### Azure リソース
-- Azure サブスクリプション
-- Azure OpenAI Service リソース（GPTモデルがデプロイ済み）
-- Azure Container Registry (ACR)
-- Azure Container Apps 環境
+- Docker Desktop がインストール済み
+- Azure OpenAI Service のリソースが作成済み（GPT-4デプロイ済み）
+- Node.js 18+ と Python 3.12+ がインストール済み
 
 ## セットアップ手順
 
-### 1. Azure OpenAI Service の準備
-
-1. Azure Portal で Azure OpenAI Service リソースを作成
-2. GPT モデルをデプロイ
-3. エンドポイントとAPIキーを取得
-
-### 2. Azure リソースの作成
+### 1. 環境変数の設定
 
 ```bash
-# リソースグループの作成
-az group create --name slide-agent-rg --location japaneast
-
-# Azure Container Registry の作成
-az acr create --resource-group slide-agent-rg \
-  --name slideagentacr \
-  --sku Basic
-
-# Container Apps 環境の作成
-az containerapp env create \
-  --name slide-agent-env \
-  --resource-group slide-agent-rg \
-  --location japaneast
-```
-
-### 3. 環境変数の設定
-
-`.env.example` を `.env` にコピーして編集：
-
-```bash
+# .env.example を .env にコピー
 cp .env.example .env
+
+# .env ファイルを編集
+nano .env  # またはお好みのエディタで
 ```
 
-`.env` ファイルを編集：
-```env
-# Azure OpenAI Service設定
+以下の値を Azure Portal から取得して設定：
+```
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_API_KEY=your-api-key-here
+AZURE_OPENAI_API_KEY=実際のAPIキー
 AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
-
-# Azure Container Registry設定
-ACR_NAME=slideagentacr
-ACR_LOGIN_SERVER=slideagentacr.azurecr.io
-RESOURCE_GROUP=slide-agent-rg
-ACA_ENVIRONMENT=slide-agent-env
-ACA_APP_NAME=slide-agent-app
 ```
 
-### 4. ローカルでのテスト
+### 2. ローカルテスト
 
-#### Docker Compose を使用
 ```bash
-# イメージのビルドと起動
-docker-compose up --build
+# 依存関係のインストール（初回のみ）
+make setup
+
+# Azure OpenAI接続テスト
+make test-connection
+
+# Dockerコンテナの起動
+make run
 
 # ブラウザでアクセス
 open http://localhost:8000
 ```
 
-#### 手動でのテスト
+### 3. 動作確認
+
+1. ブラウザで http://localhost:8000 にアクセス
+2. プロンプトを入力（例：「AIの基礎について3枚のスライドを作成」）
+3. 「計画案を生成」をクリック
+4. 計画を確認して「承認してPowerPointを作成」をクリック
+5. PowerPointファイルがダウンロードされることを確認
+
+### 4. Azure Container Registry へのプッシュ
+
+Azure Portal で ACR を作成済みの場合：
+
 ```bash
-# Dockerイメージのビルド
-docker build -t slide-agent-local .
-
-# コンテナの起動
-docker run -p 8000:8000 --env-file .env slide-agent-local
-```
-
-### 5. Azure へのデプロイ
-
-手動でデプロイ：
-
-```bash
-# Azure にログイン
+# Azure CLI でログイン
 az login
 
-# ACR にログイン
-az acr login --name slideagentacr
+# ACR にログイン（your-acr-name は実際のACR名に置き換え）
+az acr login --name your-acr-name
 
-# イメージのビルドとプッシュ
-docker build -t slideagentacr.azurecr.io/slide-agent:latest .
-docker push slideagentacr.azurecr.io/slide-agent:latest
+# イメージにタグ付け
+docker tag slide-agent:latest your-acr-name.azurecr.io/slide-agent:latest
 
-# Container App の作成
-az containerapp create \
-  --name slide-agent-app \
-  --resource-group slide-agent-rg \
-  --environment slide-agent-env \
-  --image slideagentacr.azurecr.io/slide-agent:latest \
-  --target-port 8000 \
-  --ingress external \
-  --registry-server slideagentacr.azurecr.io \
-  --cpu 0.5 \
-  --memory 1.0Gi \
-  --min-replicas 0 \
-  --max-replicas 10
+# ACR にプッシュ
+docker push your-acr-name.azurecr.io/slide-agent:latest
 ```
 
-## 主な変更ファイル
+## よく使うコマンド
 
-### backend/main.py
-- `langchain_aws.ChatBedrock` → `langchain_openai.AzureChatOpenAI`
-- AWS認証情報 → Azure OpenAI APIキーとエンドポイント
-- ヘルスチェックエンドポイントを追加
-
-### backend/requirements.txt
-- `langchain-aws` と `boto3` を削除
-- `langchain-openai` と `openai` を追加
-
-### Dockerfile
-- マルチステージビルドで最適化
-- 非rootユーザーでの実行
-- ヘルスチェックの追加
-- Azure Container Apps の PORT 環境変数対応
+```bash
+make help           # ヘルプ表示
+make build          # Dockerイメージのビルド
+make run            # コンテナ起動
+make stop           # コンテナ停止
+make logs           # ログ表示
+make health         # ヘルスチェック
+make clean          # クリーンアップ
+make test-connection # Azure OpenAI接続テスト
+```
 
 ## トラブルシューティング
 
-### Azure OpenAI のレート制限エラー
-- デプロイメントのTPM（Tokens Per Minute）制限を確認
-- `asyncio.sleep()` の待機時間を調整
+### Azure OpenAI接続エラー
+- APIキーとエンドポイントが正しいか確認
+- デプロイメント名が正しいか確認
+- ファイアウォール設定を確認
 
-### Container Apps のデプロイエラー
+### Dockerコンテナが起動しない
 ```bash
-# ログの確認
-az containerapp logs show \
-  --name slide-agent-app \
-  --resource-group slide-agent-rg \
-  --follow
+# ログを確認
+make logs
 
-# リビジョンの確認
-az containerapp revision list \
-  --name slide-agent-app \
-  --resource-group slide-agent-rg
+# コンテナを停止してクリーン
+make stop
+make clean
+make build
+make run
 ```
 
-### メモリ不足エラー
-Container Apps の設定を調整：
-```bash
-az containerapp update \
-  --name slide-agent-app \
-  --resource-group slide-agent-rg \
-  --cpu 1.0 \
-  --memory 2.0Gi
+### PowerPoint生成エラー
+- `backend/template.pptx` が存在することを確認
+- フォント「BIZ UDPGothic」がシステムにインストールされているか確認
+
+## ファイル構成
+
+```
+slide-agent-mvp/
+├── .env                    # 環境変数（作成する）
+├── .env.example            # 環境変数テンプレート
+├── Makefile                # ビルド・実行コマンド
+├── Dockerfile              # コンテナ定義
+├── docker-compose.yml      # Docker Compose設定
+├── backend/
+│   ├── main.py            # FastAPIアプリ（Azure OpenAI対応）
+│   ├── requirements.txt    # Pythonパッケージ
+│   ├── test_azure_connection.py  # 接続テストスクリプト
+│   └── template.pptx      # PowerPointテンプレート
+└── frontend/
+    └── (変更なし)
 ```
 
-## パフォーマンス最適化
+## 注意事項
 
-### コールドスタート対策
-```bash
-# 最小レプリカ数を1に設定
-az containerapp update \
-  --name slide-agent-app \
-  --resource-group slide-agent-rg \
-  --min-replicas 1
-```
+- `.env` ファイルは Git にコミットしないでください
+- APIキーは安全に管理してください
+- 本番環境では CORS 設定を適切に行ってください
+- Azure OpenAI のレート制限に注意してください
 
-### スケーリング設定
-```bash
-# HTTPスケーリングルールの設定
-az containerapp update \
-  --name slide-agent-app \
-  --resource-group slide-agent-rg \
-  --scale-rule-name http-rule \
-  --scale-rule-type http \
-  --scale-rule-http-concurrency 10
-```
+## Azure Container Apps へのデプロイ（オプション）
 
-## セキュリティ考慮事項
+ACRにプッシュ後、Azure Portal から Container Apps を作成：
 
-1. **APIキーの管理**: Azure Key Vault の利用を推奨
-2. **ネットワーク制限**: 必要に応じてVNET統合を設定
-3. **CORS設定**: 本番環境では適切なオリジンを指定
-4. **認証**: Azure AD認証の追加を検討
+1. Azure Portal で「Container Apps」を検索
+2. 「作成」をクリック
+3. 基本設定：
+   - リソースグループを選択
+   - Container App名を入力
+   - リージョンを選択
+4. コンテナー設定：
+   - イメージソース：Azure Container Registry
+   - レジストリとイメージを選択
+5. 環境変数を設定：
+   - `AZURE_OPENAI_ENDPOINT`
+   - `AZURE_OPENAI_API_KEY`
+   - `AZURE_OPENAI_DEPLOYMENT_NAME`
+   - `AZURE_OPENAI_API_VERSION`
+6. イングレス設定：
+   - HTTPトラフィック：有効
+   - ターゲットポート：8000
+   - 外部からのアクセス：許可
+7. 「確認と作成」→「作成」
 
-## コスト最適化
-
-- **自動スケーリング**: 最小レプリカを0に設定してコスト削減
-- **リソース割り当て**: 実際の使用量に基づいてCPU/メモリを調整
-- **リージョン選択**: 利用者に近いリージョンを選択
-
-## ライセンス
-
-MIT License
+デプロイ完了後、提供されたURLでアプリにアクセスできます。

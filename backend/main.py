@@ -1,5 +1,6 @@
 import asyncio
 import re
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import List, Literal
 
+# Azure OpenAI Service用のインポート
 from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
@@ -22,7 +24,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # すべてのオリジンを許可する
+    allow_origins=["*"], # 本番環境では適切なオリジンを指定
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,10 +55,21 @@ class TableSlideContent(BaseModel):
 class UserInput(BaseModel):
     prompt: str
 
-# --- 3. LLMと専門エージェント関数の定義 ---
-llm = ChatBedrock(
-    model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
-    model_kwargs={"temperature": 0.1},
+# --- 3. Azure OpenAI Service設定 ---
+# 環境変数から設定を読み込み
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+
+# Azure OpenAI LLMの初期化
+llm = AzureChatOpenAI(
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    azure_deployment=AZURE_OPENAI_DEPLOYMENT_NAME,
+    api_version=AZURE_OPENAI_API_VERSION
+#    temperature=0.1,
+#    max_tokens=4000
 )
 
 
@@ -109,6 +122,11 @@ async def run_table_agent(topic: str) -> TableSlideContent:
 
 
 # --- 4. APIエンドポイント定義 ---
+
+@app.get("/health")
+async def health_check():
+    """ヘルスチェック用エンドポイント"""
+    return {"status": "healthy", "service": "slide-agent"}
 
 @app.post("/api/generate-plan", response_model=PresentationPlan)
 async def generate_plan(user_input: UserInput):
@@ -177,7 +195,7 @@ async def create_slides(presentation_plan: PresentationPlan):
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"スライド {i + 1} (トピック: '{slide_plan.topic}') の生成に失敗しました: {e}")
 
-            await asyncio.sleep(1) # 1秒待機して次のAPIコールへ
+            await asyncio.sleep(1) # APIレート制限対策
 
         # 3. ループ完了後、ファイルを保存して返す
         output_filename = "generated_presentation.pptx"

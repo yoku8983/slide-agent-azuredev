@@ -51,8 +51,8 @@ async def test_azure_openai_connection():
             api_key=required_vars["AZURE_OPENAI_API_KEY"],
             azure_deployment=required_vars["AZURE_OPENAI_DEPLOYMENT_NAME"],
             api_version=required_vars["AZURE_OPENAI_API_VERSION"],
-            temperature=0.1,
-            max_tokens=100
+#            temperature=0.1
+#            max_tokens=100
         )
         print("✅ クライアント初期化完了")
         print()
